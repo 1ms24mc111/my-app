@@ -1,0 +1,52 @@
+pipeline {
+    agent any 
+    
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')  // lowercase 'c'
+        IMAGE_NAME = "vivek5041/my-app"
+    }
+    
+    stages {
+        stage('Checkout') {  // Fixed quotes: '' not ''
+            steps {
+                
+                git(
+                    url: 'git@github.com:1ms24mc111/my-app.git',
+                    branch: 'main'
+                )
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${IMAGE_NAME}:latest")
+                }
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+		always{
+			echo 'Cleaning up workspace…'
+			deleteDir()
+			}
+    }
+}
